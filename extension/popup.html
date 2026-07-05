@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Phishing Detector</title>
+  <style>
+    body {
+      width: 300px; padding: 16px; font-family: Calibri, sans-serif;
+      background: #f8fafc; margin: 0;
+    }
+    h2 { color: #1A3C5E; margin: 0 0 12px; font-size: 16px; }
+    .badge {
+      display: inline-block; padding: 6px 16px; border-radius: 20px;
+      font-weight: bold; font-size: 15px; margin-bottom: 12px;
+    }
+    .SAFE     { background: #dcfce7; color: #166534; }
+    .SUSPICIOUS { background: #fef9c3; color: #854d0e; }
+    .PHISHING { background: #fee2e2; color: #991b1b; }
+    .score-bar-bg { background: #e5e7eb; border-radius: 4px; height: 8px; margin-bottom: 12px; }
+    .score-bar { height: 8px; border-radius: 4px; transition: width 0.4s; }
+    .reasons { font-size: 12px; color: #374151; }
+    .reasons li { margin-bottom: 4px; }
+    .url { font-size: 11px; color: #6b7280; word-break: break-all; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h2>🔍 Phishing Detector</h2>
+  <div class="url" id="url">Loading...</div>
+  <div class="badge" id="badge">—</div>
+  <div class="score-bar-bg">
+    <div class="score-bar" id="score-bar" style="width:0%"></div>
+  </div>
+  <div class="reasons"><ul id="reasons"></ul></div>
+
+  <script>
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      const url = tabs[0]?.url || "";
+      document.getElementById("url").textContent = url.length > 60 ? url.slice(0, 60) + "..." : url;
+    });
+
+    chrome.runtime.sendMessage({ type: "GET_SCORE" }, (result) => {
+      if (!result) return;
+      const badge = document.getElementById("badge");
+      badge.textContent = result.label;
+      badge.className = "badge " + result.label;
+
+      const bar = document.getElementById("score-bar");
+      bar.style.width = result.score + "%";
+      bar.style.background = result.label === "PHISHING" ? "#dc2626"
+                           : result.label === "SUSPICIOUS" ? "#f59e0b" : "#16a34a";
+
+      const ul = document.getElementById("reasons");
+      if (result.reasons.length === 0) {
+        ul.innerHTML = "<li>No suspicious signals detected.</li>";
+      } else {
+        ul.innerHTML = result.reasons.map(r => `<li>⚠ ${r}</li>`).join("");
+      }
+    });
+  </script>
+</body>
+</html>
